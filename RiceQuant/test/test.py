@@ -1,12 +1,13 @@
 # import imp
 # from matplotlib.pyplot import close
+from doctest import Example
 import matplotlib.pyplot as plt
 import rqdatac as rq
 import pandas as pd
 rq.init()
 data = rq.get_price('000001.XSHE', start_date='2020-04-01', end_date='2021-04-03', adjust_type='none',expect_df=False)
 # data = pd.read_csv('000001.csv')
-# print(data.head())
+# print(data.head()) 
 # 数据归一化：归一化之后的数据服从正态分布
 # X_std = (X - X.min(axis=0)) / (X.max(axis=0)-X.min(axis=0))
 # X_scaled = X_std*(max-min)+min
