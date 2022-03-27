@@ -49,3 +49,4 @@ data['cumulativeChange'].plot(grid=True,c='r') #调整后的收盘价
 plt.title("BABA")
 plt.legend()
 plt.show()
+# ----
