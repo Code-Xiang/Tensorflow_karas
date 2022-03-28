@@ -44,10 +44,9 @@ babaChange = change(closeCol)
 # plt.rcParams['figure.figsize']=(10,6)
 # data[]
 data['cumulativeChange'] = babaChange
-
-data['cumulativeChange'].plot(grid=True,c='r') #调整后的收盘价
+data['cumulativeChange'].plot(grid=True,c='r') # 调整后的收盘价
 # plt.plot(label='baba')
 plt.title("BABA")
 plt.legend()
 plt.show()
-# ----
+# ----------------------------------------------

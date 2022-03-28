@@ -68,3 +68,130 @@ df2 = pd.DataFrame({'A': 1.,
 # Name: E, dtype: category
 # Categories (2, object): ['test', 'train']
 
+# --------------------------------------------
+
+#数据处理DataFrame
+d = {'one': pd.Series([1., 2., 3.], index=['a', 'b', 'c']),
+     'two': pd.Series([1., 2., 3., 4.], index=['a', 'b', 'c', 'd'])}
+# print('d:\n',d)
+# d:
+#  {'one': a    1.0
+#          b    2.0
+#          c    3.0
+# dtype: float64, 'two':  a    1.0
+#                         b    2.0
+#                         c    3.0
+#                         d    4.0
+# dtype: float64}
+df3 = pd.DataFrame(d)
+# print('df3:\n',df3)
+# df3:
+#     one  two
+# a  1.0  1.0
+# b  2.0  2.0
+# c  3.0  3.0
+# d  NaN  4.0
+
+#--------------------------------------
+# 增添数据
+#--------------------------------------
+df3['three'] = df3['one'] * df3['two']
+# print('df3:\n',df3)
+# df3:
+#     one  two  three
+# a  1.0  1.0    1.0
+# b  2.0  2.0    4.0
+# c  3.0  3.0    9.0
+# d  NaN  4.0    NaN
+df3['flag']=df3['one']>2
+# print('df3:\n',df3)
+# df3:
+#     one  two  three   flag
+# a  1.0  1.0    1.0  False
+# b  2.0  2.0    4.0  False
+# c  3.0  3.0    9.0   True
+# d  NaN  4.0    NaN  False
+
+#--------------------------------------
+# 删除数据
+#--------------------------------------
+del df3['two']
+# print('df3:\n',df3)
+#     one  three   flag
+# a  1.0    1.0  False
+# b  2.0    4.0  False
+# c  3.0    9.0   True
+# d  NaN    NaN  False
+
+three = df3.pop('three')
+# print('-----------------')
+# print('three:\n',three)
+# print('-----------------')
+# print('df3:\n',df3)
+# print('-----------------')
+# -----------------
+# three:
+#  a    1.0
+# b    4.0
+# c    9.0
+# d    NaN
+# Name: three, dtype: float64
+# -----------------
+# df3:
+#     one   flag
+# a  1.0  False
+# b  2.0  False
+# c  3.0   True
+# d  NaN  False
+# -----------------
+
+#---------------------------------
+#标量值以广播的方式填充
+df3['foo'] = 'bar'
+# print('df3:\n',df3)
+# df3:
+#    one   flag  foo
+# a  1.0  False  bar
+# b  2.0  False  bar
+# c  3.0   True  bar
+# d  NaN  False  bar
+#---------------------------------
+# insert 插入数据
+df3.insert(1, 'bar', df3['one'])
+# print('df3:\n',df3)
+#     one  bar   flag  foo
+# a  1.0  1.0  False  bar
+# b  2.0  2.0  False  bar
+# c  3.0  3.0   True  bar
+# d  NaN  NaN  False  bar
+df3.insert(2, 'bar2', ['1','2','3','4'])
+# print('df3:\n',df3)
+# df3:
+#     one  bar bar2   flag  foo
+# a  1.0  1.0    1  False  bar
+# b  2.0  2.0    2  False  bar
+# c  3.0  3.0    3   True  bar
+# d  NaN  NaN    4  False  bar
+#---------------------------------
+
+# ====================================
+# 索引、选择
+
+# print(df3.loc['b'])
+# one       2.0
+# bar       2.0
+# bar2        2
+# flag    False
+# foo       bar
+# Name: b, dtype: object
+
+# print(df3.iloc[2])
+# one      3.0
+# bar      3.0
+# bar2       3
+# flag    True
+# foo      bar
+# Name: c, dtype: object
+
+# =======================================
+# 数据清洗
