@@ -2,7 +2,7 @@ import numpy as np
 # numpy.array
 exam = np.array([[1,2,3],[4,5,6]])
 # print(exam)
-
+print('shape[1]',exam.shape[1])
 #定义结构化数据
 Stu = np.dtype([('name','S20'),('age','i1')])
 # print(Stu)

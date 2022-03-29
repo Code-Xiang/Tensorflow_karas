@@ -1,6 +1,9 @@
+# tf_v1版本
+# from os import pread
 import numpy as np
 import matplotlib.pyplot as plt
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 date = np.linspace(1,30,30)
 beginPrice = np.array([2923.19,2928.06,2943.92,2946.26,2944.40,2920.85,2861.33,2854.58,2776.69,2789.02,
                        2784.18,2805.59,2781.98,2798.05,2824.49,2762.34,2817.57,2835.52,2879.08,2875.47,
@@ -31,9 +34,29 @@ priceNormal =  np.zeros([30,1])
 for i in range(0,30):
     dataNormal[i,0] = i/29.0
     priceNormal[i,0] = endPrice[i]/3000.0
-x = tf.keras.Input([None,1],dtype='float32')
-y = tf.keras.Input([None,1],dtype='float32')
+x = tf.placeholder(tf.float32,[None,1])
+y = tf.placeholder(tf.float32,[None,1])
 # x->hidden_layer
-w1 = tf.Variable(tf.random_uniform_initializer([1,25],0,1))
+w1 = tf.Variable(tf.random_uniform([1,25],0,1))
 b1 =tf.Variable(tf.zeros([1,25]))
 wb1 = tf.matmul(x,w1)+b1
+layer1 = tf.nn.relu(wb1) # 激励函数
+# hidden_layer->output
+w2 = tf.Variable(tf.random_uniform([25,1],0,1))
+b2 = tf.Variable(tf.zeros([30,1]))
+wb2 = tf.matmul(layer1,w2)+b2
+layer2 = tf.nn.relu(wb2)
+loss = tf.reduce_mean(tf.square(y-layer2)) #y为真实数据，layer2为网络预测结果
+#梯度下降
+train_step = tf.train.GradientDescentOptimizer(0.1).minimize(loss)
+with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer())
+    for i in range(0,20000):
+        sess.run(train_step,feed_dict={x:dataNormal,y:priceNormal})
+    #预测, X w1w2 b1b2--->layer2
+    pred = sess.run(layer2,feed_dict={x:dataNormal})
+    predPrice = np.zeros([30,1])
+    for i in range(0,30):
+        predPrice[i,0]=(pred*3000)[i,0]
+    plt.plot(date,predPrice,'b',lw=1)
+    plt.show()
