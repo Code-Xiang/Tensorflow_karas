@@ -6,6 +6,7 @@ from sklearn.preprocessing import MinMaxScaler
 import tensorflow as tf
 from sklearn.utils import shuffle
 import matplotlib.pyplot as plt
+from tensorflow.python import keras
 from tensorflow.python.keras.layers import Dense, LSTM
 from tensorflow.python.keras.utils.np_utils import to_categorical
 from tensorflow.python.keras.models import Sequential
@@ -92,14 +93,6 @@ print(model.summary())
 # print('train_y:\n',train_y)
 # plt.plot(train_y)
 
-# # fit the RNN model
-history = model.fit(
-    train_X,
-    train_y,
-    epochs=300,
-    batch_size=512,
-    validation_split=0.3)
-figure = plt.Figure()
 # plt.plot(history.history['loss'],
 #          'b',
 #          label='Training loss')
@@ -110,21 +103,22 @@ figure = plt.Figure()
 # plt.xlabel('Epochs')
 # plt.show()
 # Finalizing predictions
-model.save('path_to_my_model', save_format='tf')
-# scaled_preds = model.predict(test_X)
-# test_preds = np.zeros_like(scaled_preds)
-# for i in range(scaled_preds.shape[1]):
-#     test_preds[:, i] = y_sc.inverse_transform(
-#         [scaled_preds[:, i]]).reshape(1, scaled_preds.shape[0])
+# 预测准确度
+new_model = keras.models.load_model('path_to_my_model')
+scaled_preds = new_model.predict(test_X)
+test_preds = np.zeros_like(scaled_preds)
+for i in range(scaled_preds.shape[1]):
+    test_preds[:, i] = y_sc.inverse_transform(
+        [scaled_preds[:, i]]).reshape(1, scaled_preds.shape[0])
 
 
-# test_preds_df = pd.DataFrame(
-#     test_preds, columns=[f'pred_{i+1}_step' for i in range(test_preds.shape[1])])
-# test_preds_df['true_value'] = test_raw.values[-len(test_preds):,0]
-# test_preds_df['naive_pred'] = test_raw.values[-len(test_preds) - 1:-1,0]
+test_preds_df = pd.DataFrame(
+    test_preds, columns=[f'pred_{i+1}_step' for i in range(test_preds.shape[1])])
+test_preds_df['true_value'] = test_raw.values[-len(test_preds):,0]
+test_preds_df['naive_pred'] = test_raw.values[-len(test_preds) - 1:-1,0]
 
-# test_preds_df[['pred_1_step', 'true_value'
-#                ]].plot()
-# from sklearn.metrics import mean_absolute_error
-# err = mean_absolute_error(test_preds_df['pred_1_step'].values,test_preds_df['true_value'].values)
-# print(f'abs error for testset is {err}')
+test_preds_df[['pred_1_step', 'true_value'
+               ]].plot()
+from sklearn.metrics import mean_absolute_error
+err = mean_absolute_error(test_preds_df['pred_1_step'].values,test_preds_df['true_value'].values)
+print(f'abs error for testset is {err}')
