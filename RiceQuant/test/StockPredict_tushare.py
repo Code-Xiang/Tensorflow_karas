@@ -100,15 +100,15 @@ history = model.fit(
     batch_size=512,
     validation_split=0.3)
 figure = plt.Figure()
-# plt.plot(history.history['loss'],
-#          'b',
-#          label='Training loss')
-# plt.plot(history.history['val_loss'],
-#          'r',
-#          label='Validation loss')
-# plt.legend(loc='upper right')
-# plt.xlabel('Epochs')
-# plt.show()
+plt.plot(history.history['loss'],
+         'b',
+         label='Training loss')
+plt.plot(history.history['val_loss'],
+         'r',
+         label='Validation loss')
+plt.legend(loc='upper right')
+plt.xlabel('Epochs')
+plt.show()
 # Finalizing predictions
 model.save('path_to_my_model', save_format='tf')
 # scaled_preds = model.predict(test_X)
