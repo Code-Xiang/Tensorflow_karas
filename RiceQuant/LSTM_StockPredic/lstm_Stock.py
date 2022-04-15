@@ -1,9 +1,30 @@
-import tushare as ts
 import numpy as np
+import pandas as pd
+
+# 目前riceQuant只支持中国市场
+# import rqdatac
+# from sqlalchemy import false
+# rqdatac.init()
+# order_book_ids = 'BSE'
+# df = rqdatac.get_price(order_book_ids, start_date='2010-06-01', end_date='2020-01-01', frequency='1d')
+# df.to_csv('.\RiceQuant\LSTM_StockPredic\BSE.csv')
+
+import tushare as ts
 ts.set_token('5cb5c9d3abea30da6b1392bd553e241bc4a4f45cdd70fc048d2328cb')
 pro = ts.pro_api()
-df = pro.us_daily(ts_code='BSE', start_date='20100101', end_date='20200601')
-
+ts_code = 'AAPL' 
+# ts_code = '002069.SZ' # 神奇的獐子岛？
+start_date = '20100601'
+end_date = '20200101'
+df = pro.us_daily(
+    ts_code=ts_code,
+    start_date=start_date,
+    end_date=end_date
+)
+# df1 = pro.us_basic()
+# df1.to_csv('RiceQuant\LSTM_StockPredic\美股.csv')
+print('df:/n',df)
+df.to_csv('RiceQuant\LSTM_StockPredic\AAPL.csv')
 def transform_dataset(train_set, test_set,y_train,y_test,n_input,n_output):
         # vstack竖直堆叠数组
         all_data = np.vstack((train_set, test_set))
