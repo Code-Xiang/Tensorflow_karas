@@ -8,7 +8,7 @@ from sklearn.preprocessing import RobustScaler
 from Statistics import Statistics
 
 import tensorflow as tf
-from tensorflow.keras.layers import CuDNNLSTM, Dropout,Dense,Input,add
+from tensorflow.compat.v1.keras.layers import CuDNNLSTM, Dropout,Dense,Input,add
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, CSVLogger, LearningRateScheduler
 from tensorflow.keras.models import Model, Sequential, load_model
 from tensorflow.keras import optimizers
@@ -18,9 +18,10 @@ warnings.filterwarnings("ignore")
 import os
 SEED = 9
 os.environ['PYTHONHASHSEED']=str(SEED)
+
+# print('random.seed(SEED):\n',np.random.seed(SEED))
 random.seed(SEED)
 np.random.seed(SEED)
-
 
 SP500_df = pd.read_csv('data/SPXconst.csv')
 all_companies = list(set(SP500_df.values.flatten()))
@@ -28,7 +29,6 @@ all_companies.remove(np.nan)
 
 constituents = {'-'.join(col.split('/')[::-1]):set(SP500_df[col].dropna()) 
                 for col in SP500_df.columns}
-
 constituents_train = {} 
 for test_year in range(1993,2016):
     months = [str(t)+'-0'+str(m) if m<10 else str(t)+'-'+str(m) 
@@ -36,7 +36,7 @@ for test_year in range(1993,2016):
     constituents_train[test_year] = [list(constituents[m]) for m in months]
     constituents_train[test_year] = set([i for sublist in constituents_train[test_year] 
                                          for i in sublist])
-
+# 1990-01 1990-12
 def makeLSTM():
     inputs = Input(shape=(240,1))
     x = CuDNNLSTM(25,return_sequences=False)(inputs)
@@ -44,7 +44,7 @@ def makeLSTM():
     outputs = Dense(2,activation='softmax')(x)
     model = Model(inputs=inputs, outputs=outputs)
     model.compile(loss='categorical_crossentropy',optimizer=optimizers.RMSprop(),
-                          metrics=['accuracy'])
+                        metrics=['accuracy'])
     model.summary()
     return model
     
