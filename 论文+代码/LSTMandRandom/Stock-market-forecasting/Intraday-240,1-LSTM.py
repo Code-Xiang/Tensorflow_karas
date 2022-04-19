@@ -55,8 +55,8 @@ def callbacks_req(model_type='LSTM'):
     model_checkpoint = ModelCheckpoint(filepath, monitor='val_loss',save_best_only=False, period=1)
     earlyStopping = EarlyStopping(monitor='val_loss',mode='min',patience=10,restore_best_weights=True)
     return [csv_logger,earlyStopping,model_checkpoint]
-
-def reshaper(arr):
+#  models-Intraday-240-1-LSTM/training-log-LSTM-1990-01.csv
+#  models-Intraday-240-1-LSTM/model-training-log-LSTM-1990-01-E{day}.h5
     arr = np.array(np.split(arr,3,axis=1))
     arr = np.swapaxes(arr,0,1)
     arr = np.swapaxes(arr,1,2)
