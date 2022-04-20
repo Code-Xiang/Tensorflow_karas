@@ -52,7 +52,7 @@ def makeLSTM():
 def callbacks_req(model_type='LSTM'):
     csv_logger = CSVLogger(model_folder+'/training-log-'+model_type+'-'+str(test_year)+'.csv')
     filepath = model_folder+"/model-" + model_type + '-' + str(test_year) + "-E{epoch:02d}.h5"
-    model_checkpoint = ModelCheckpoint(filepath, monitor='val_loss',save_best_only=False, period=1)
+    model_checkpoint = ModelCheckpoint(filepath, monitor='val_loss',save_best_only=False, save_freq=1)
     earlyStopping = EarlyStopping(monitor='val_loss',mode='min',patience=10,restore_best_weights=True)
     return [csv_logger,earlyStopping,model_checkpoint]
 #  models-Intraday-240-1-LSTM/training-log-LSTM-1990-01.csv
@@ -66,6 +66,7 @@ def trainer(train_data,test_data,model_type='LSTM'):
     np.random.shuffle(train_data)
     train_x,train_y,train_ret = train_data[:,2:-2],train_data[:,-1],train_data[:,-2]
     train_x = np.reshape(train_x,(len(train_x),240,1))
+
     train_y = np.reshape(train_y,(-1, 1))
     train_ret = np.reshape(train_ret,(-1, 1))
     enc = OneHotEncoder(handle_unknown='ignore')
@@ -84,7 +85,7 @@ def trainer(train_data,test_data,model_type='LSTM'):
               epochs=1000,
               validation_split=0.2,
               callbacks=callbacks,
-              batch_size=512
+              batch_size=256
               )
 
     dates = list(set(test_data[:,0]))
@@ -155,7 +156,7 @@ def scalar_normalize(train_data,test_data):
     train_data[:,2:-2] = scaler.transform(train_data[:,2:-2])
     test_data[:,2:-2] = scaler.transform(test_data[:,2:-2])
     
-
+# 生成目录
 model_folder = 'models-Intraday-240-1-LSTM'
 result_folder = 'results-Intraday-240-1-LSTM'
 for directory in [model_folder,result_folder]:
