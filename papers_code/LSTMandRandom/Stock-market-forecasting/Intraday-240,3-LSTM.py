@@ -8,7 +8,7 @@ from sklearn.preprocessing import RobustScaler
 from Statistics import Statistics
 
 import tensorflow as tf
-from tensorflow.keras.layers import CuDNNLSTM, Dropout,Dense,Input 
+from tensorflow.compat.v1.keras.layers import CuDNNLSTM, Dropout,Dense,Input 
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, CSVLogger
 from tensorflow.keras.models import Model, Sequential, load_model
 from tensorflow.keras import optimizers
@@ -20,8 +20,8 @@ SEED = 9
 os.environ['PYTHONHASHSEED']=str(SEED)
 random.seed(SEED)
 np.random.seed(SEED)
-
-SP500_df = pd.read_csv('data/SPXconst.csv')
+SP500_df = pd.read_csv('papers_code/LSTMandRandom/Stock-market-forecasting/data/SPXconst.csv')
+# SP500_df = pd.read_csv('./论文+代码/LSTMandRandom/Stock-market-forecasting/data/SPXconst.csv')
 all_companies = list(set(SP500_df.values.flatten()))
 all_companies.remove(np.nan)
 
@@ -65,11 +65,14 @@ def trainer(train_data,test_data):
     np.random.shuffle(train_data)
     train_x,train_y,train_ret = train_data[:,2:-2],train_data[:,-1],train_data[:,-2]
     train_x = reshaper(train_x)
+    train_x.astype(np.int64)
     train_y = np.reshape(train_y,(-1, 1))
+   
     train_ret = np.reshape(train_ret,(-1, 1))
     enc = OneHotEncoder(handle_unknown='ignore')
     enc.fit(train_y)
     enc_y = enc.transform(train_y).toarray()
+    enc_y.astype(np.int64)
     train_ret = np.hstack((np.zeros((len(train_data),1)),train_ret)) 
 
     model = makeLSTM()
@@ -172,9 +175,9 @@ for test_year in range(1993,2020):
     print(test_year)
     print('-'*40)
     
-    filename = 'data/Open-'+str(test_year-3)+'.csv'
+    filename = 'papers_code/LSTMandRandom/Stock-market-forecasting/data/Open-'+str(test_year-3)+'.csv'
     df_open = pd.read_csv(filename)
-    filename = 'data/Close-'+str(test_year-3)+'.csv'
+    filename = 'papers_code/LSTMandRandom/Stock-market-forecasting/data/Close-'+str(test_year-3)+'.csv'
     df_close = pd.read_csv(filename)
     
     label = create_label(df_open,df_close)
