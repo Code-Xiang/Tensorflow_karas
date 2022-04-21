@@ -8,8 +8,8 @@ from sklearn.preprocessing import RobustScaler
 from Statistics import Statistics
 
 import tensorflow as tf
-from tensorflow.keras.layers import CuDNNLSTM, Dropout,Dense,Input 
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, CSVLogger
+from tensorflow.compat.v1.keras.layers import CuDNNLSTM, Dropout,Dense,Input,add
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, CSVLogger, LearningRateScheduler
 from tensorflow.keras.models import Model, Sequential, load_model
 from tensorflow.keras import optimizers
 import warnings
@@ -18,6 +18,8 @@ warnings.filterwarnings("ignore")
 import os
 SEED = 9
 os.environ['PYTHONHASHSEED']=str(SEED)
+
+# print('random.seed(SEED):\n',np.random.seed(SEED))
 random.seed(SEED)
 np.random.seed(SEED)
 
@@ -27,7 +29,6 @@ all_companies.remove(np.nan)
 
 constituents = {'-'.join(col.split('/')[::-1]):set(SP500_df[col].dropna()) 
                 for col in SP500_df.columns}
-
 constituents_train = {} 
 for test_year in range(1993,2016):
     months = [str(t)+'-0'+str(m) if m<10 else str(t)+'-'+str(m) 
@@ -35,15 +36,15 @@ for test_year in range(1993,2016):
     constituents_train[test_year] = [list(constituents[m]) for m in months]
     constituents_train[test_year] = set([i for sublist in constituents_train[test_year] 
                                          for i in sublist])
-
+# 1990-01 1990-12
 def makeLSTM():
-    inputs = Input(shape=(240,3))
+    inputs = Input(shape=(240,1))
     x = CuDNNLSTM(25,return_sequences=False)(inputs)
     x = Dropout(0.1)(x)
     outputs = Dense(2,activation='softmax')(x)
     model = Model(inputs=inputs, outputs=outputs)
     model.compile(loss='categorical_crossentropy',optimizer=optimizers.RMSprop(),
-                          metrics=['accuracy'])
+                        metrics=['accuracy'])
     model.summary()
     return model
     
@@ -51,20 +52,21 @@ def makeLSTM():
 def callbacks_req(model_type='LSTM'):
     csv_logger = CSVLogger(model_folder+'/training-log-'+model_type+'-'+str(test_year)+'.csv')
     filepath = model_folder+"/model-" + model_type + '-' + str(test_year) + "-E{epoch:02d}.h5"
-    model_checkpoint = ModelCheckpoint(filepath, monitor='val_loss',save_best_only=False, period=1)
+    model_checkpoint = ModelCheckpoint(filepath, monitor='val_loss',save_best_only=False, save_freq=1)
     earlyStopping = EarlyStopping(monitor='val_loss',mode='min',patience=10,restore_best_weights=True)
     return [csv_logger,earlyStopping,model_checkpoint]
-
-def reshaper(arr):
+#  models-Intraday-240-1-LSTM/training-log-LSTM-1990-01.csv
+#  models-Intraday-240-1-LSTM/model-training-log-LSTM-1990-01-E{day}.h5
     arr = np.array(np.split(arr,3,axis=1))
     arr = np.swapaxes(arr,0,1)
     arr = np.swapaxes(arr,1,2)
     return arr
 
-def trainer(train_data,test_data):
+def trainer(train_data,test_data,model_type='LSTM'):
     np.random.shuffle(train_data)
     train_x,train_y,train_ret = train_data[:,2:-2],train_data[:,-1],train_data[:,-2]
-    train_x = reshaper(train_x)
+    train_x = np.reshape(train_x,(len(train_x),240,1))
+
     train_y = np.reshape(train_y,(-1, 1))
     train_ret = np.reshape(train_ret,(-1, 1))
     enc = OneHotEncoder(handle_unknown='ignore')
@@ -72,22 +74,25 @@ def trainer(train_data,test_data):
     enc_y = enc.transform(train_y).toarray()
     train_ret = np.hstack((np.zeros((len(train_data),1)),train_ret)) 
 
-    model = makeLSTM()
-    callbacks = callbacks_req()
+    if model_type == 'LSTM':
+        model = makeLSTM()
+    else:
+        return
+    callbacks = callbacks_req(model_type)
     
     model.fit(train_x,
               enc_y,
               epochs=1000,
               validation_split=0.2,
               callbacks=callbacks,
-              batch_size=512
+              batch_size=256
               )
 
     dates = list(set(test_data[:,0]))
     predictions = {}
     for day in dates:
         test_d = test_data[test_data[:,0]==day]
-        test_d = reshaper(test_d[:,2:-2])
+        test_d = np.reshape(test_d[:,2:-2], (len(test_d),240,1))
         predictions[day] = model.predict(test_d)[:,1]
     return model,predictions
 
@@ -134,15 +139,6 @@ def create_stock_data(df_open,df_close,st,m=240):
     for k in range(m)[::-1]:
         st_data['IntraR'+str(k)] = daily_change.shift(k)
 
-    nextday_ret = (np.array(df_open[st][1:])/np.array(df_close[st][:-1])-1)
-    nextday_ret = pd.Series(list(nextday_ret)+[np.nan])     
-    for k in range(m)[::-1]:
-        st_data['NextR'+str(k)] = nextday_ret.shift(k)
-
-    close_change = df_close[st].pct_change()
-    for k in range(m)[::-1]:
-        st_data['CloseR'+str(k)] = close_change.shift(k)
-
     st_data['IntraR-future'] = daily_change.shift(-1)    
     st_data['label'] = list(label[st])+[np.nan] 
     st_data['Month'] = list(df_close['Date'].str[:-3])
@@ -158,10 +154,11 @@ def scalar_normalize(train_data,test_data):
     scaler = RobustScaler()
     scaler.fit(train_data[:,2:-2])
     train_data[:,2:-2] = scaler.transform(train_data[:,2:-2])
-    test_data[:,2:-2] = scaler.transform(test_data[:,2:-2])    
+    test_data[:,2:-2] = scaler.transform(test_data[:,2:-2])
     
-model_folder = 'models-Intraday-240-3-LSTM'
-result_folder = 'results-Intraday-240-3-LSTM'
+# 生成目录
+model_folder = 'models-Intraday-240-1-LSTM'
+result_folder = 'results-Intraday-240-1-LSTM'
 for directory in [model_folder,result_folder]:
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -186,7 +183,7 @@ for test_year in range(1993,2020):
         st_train_data,st_test_data = create_stock_data(df_open,df_close,st)
         train_data.append(st_train_data)
         test_data.append(st_test_data)
-      
+        
     train_data = np.concatenate([x for x in train_data])
     test_data = np.concatenate([x for x in test_data])
     
@@ -208,4 +205,5 @@ for test_year in range(1993,2020):
         res += 'Sharpe = '+str(result.sharpe()) + '\n'
         res += '-'*30 + '\n'
         myfile.write(res)
-            
+        
+
