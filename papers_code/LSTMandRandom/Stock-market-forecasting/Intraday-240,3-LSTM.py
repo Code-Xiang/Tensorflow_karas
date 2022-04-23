@@ -10,7 +10,7 @@ from Statistics import Statistics
 import tensorflow as tf
 from tensorflow.compat.v1.keras.layers import CuDNNLSTM, Dropout,Dense,Input 
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, CSVLogger
-from tensorflow.keras.models import Model, Sequential, load_model
+from tensorflow.compat.v1.keras.models import Model, Sequential, load_model
 from tensorflow.keras import optimizers
 import warnings
 warnings.filterwarnings("ignore")
@@ -59,20 +59,18 @@ def reshaper(arr):
     arr = np.array(np.split(arr,3,axis=1))
     arr = np.swapaxes(arr,0,1)
     arr = np.swapaxes(arr,1,2)
-    return arr
+    return arr.astype(np.float32)
 
 def trainer(train_data,test_data):
     np.random.shuffle(train_data)
     train_x,train_y,train_ret = train_data[:,2:-2],train_data[:,-1],train_data[:,-2]
     train_x = reshaper(train_x)
-    train_x.astype(np.int64)
     train_y = np.reshape(train_y,(-1, 1))
    
     train_ret = np.reshape(train_ret,(-1, 1))
     enc = OneHotEncoder(handle_unknown='ignore')
     enc.fit(train_y)
     enc_y = enc.transform(train_y).toarray()
-    enc_y.astype(np.int64)
     train_ret = np.hstack((np.zeros((len(train_data),1)),train_ret)) 
 
     model = makeLSTM()
@@ -96,7 +94,6 @@ def trainer(train_data,test_data):
 
 def trained(filename,train_data,test_data):
     model = load_model(filename)
-
     dates = list(set(test_data[:,0]))
     predictions = {}
     for day in dates:
