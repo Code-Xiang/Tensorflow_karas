@@ -39,6 +39,8 @@ for test_year in range(1993,2016):
 # 1990-01 1990-12
 def makeLSTM():
     inputs = Input(shape=(240,1))
+    # return_sequences默认为false,此时返回一个hidden state的值，如果input数据包含多个时间步，则这个
+    # hidden state 最后一个时间步的结果
     x = CuDNNLSTM(25,return_sequences=False)(inputs)
     x = Dropout(0.1)(x)
     outputs = Dense(2,activation='softmax')(x)
@@ -62,39 +64,7 @@ def callbacks_req(model_type='LSTM'):
     arr = np.swapaxes(arr,1,2)
     return arr
 
-def trainer(train_data,test_data,model_type='LSTM'):
-    np.random.shuffle(train_data)
-    train_x,train_y,train_ret = train_data[:,2:-2],train_data[:,-1],train_data[:,-2]
-    train_x = np.reshape(train_x,(len(train_x),240,1)).astype(np.float32)
 
-    train_y = np.reshape(train_y,(-1, 1))
-    train_ret = np.reshape(train_ret,(-1, 1))
-    enc = OneHotEncoder(handle_unknown='ignore')
-    enc.fit(train_y)
-    enc_y = enc.transform(train_y).toarray()
-    train_ret = np.hstack((np.zeros((len(train_data),1)),train_ret)) 
-
-    if model_type == 'LSTM':
-        model = makeLSTM()
-    else:
-        return
-    callbacks = callbacks_req(model_type)
-    
-    model.fit(train_x,
-              enc_y,
-              epochs=1000,
-              validation_split=0.2,
-              callbacks=callbacks,
-              batch_size=512
-              )
-
-    dates = list(set(test_data[:,0]))
-    predictions = {}
-    for day in dates:
-        test_d = test_data[test_data[:,0]==day]
-        test_d = np.reshape(test_d[:,2:-2], (len(test_d),240,1))
-        predictions[day] = model.predict(test_d)[:,1]
-    return model,predictions
 
 def trained(filename,train_data,test_data):
     model = load_model(filename)
@@ -106,19 +76,7 @@ def trained(filename,train_data,test_data):
         predictions[day] = model.predict(test_d)[:,1]
     return model,predictions     
 
-def simulate(test_data,predictions):
-    rets = pd.DataFrame([],columns=['Long','Short'])
-    k = 10
-    for day in sorted(predictions.keys()):
-        preds = predictions[day]
-        test_returns = test_data[test_data[:,0]==day][:,-2]
-        top_preds = predictions[day].argsort()[-k:][::-1] 
-        trans_long = test_returns[top_preds]
-        worst_preds = predictions[day].argsort()[:k][::-1] 
-        trans_short = -test_returns[worst_preds]
-        rets.loc[day] = [np.mean(trans_long),np.mean(trans_short)] 
-    print('Result : ',rets.mean())  
-    return rets       
+   
 
     
 def create_label(df_open,df_close,perc=[0.5,0.5]):
@@ -154,7 +112,54 @@ def scalar_normalize(train_data,test_data):
     scaler.fit(train_data[:,2:-2])
     train_data[:,2:-2] = scaler.transform(train_data[:,2:-2])
     test_data[:,2:-2] = scaler.transform(test_data[:,2:-2])
+
+def trainer(train_data,test_data,model_type='LSTM'):
+    np.random.shuffle(train_data)
+    train_x,train_y,train_ret = train_data[:,2:-2],train_data[:,-1],train_data[:,-2]
+    train_x = np.reshape(train_x,(len(train_x),240,1)).astype(np.float32)
+
+    train_y = np.reshape(train_y,(-1, 1))
+    train_ret = np.reshape(train_ret,(-1, 1))
+    enc = OneHotEncoder(handle_unknown='ignore')
+    enc.fit(train_y)
+    enc_y = enc.transform(train_y).toarray()
+    train_ret = np.hstack((np.zeros((len(train_data),1)),train_ret)) 
+
+    if model_type == 'LSTM':
+        model = makeLSTM()
+    else:
+        return
+    callbacks = callbacks_req(model_type)
     
+    model.fit(train_x,
+              enc_y,
+              epochs=1000,
+              validation_split=0.2,
+              callbacks=callbacks,
+              batch_size=512
+              )
+
+    dates = list(set(test_data[:,0]))
+    predictions = {}
+    for day in dates:
+        test_d = test_data[test_data[:,0]==day]
+        test_d = np.reshape(test_d[:,2:-2], (len(test_d),240,1))
+        predictions[day] = model.predict(test_d)[:,1]
+    return model,predictions
+
+def simulate(test_data,predictions):
+    rets = pd.DataFrame([],columns=['Long','Short'])
+    k = 10
+    for day in sorted(predictions.keys()):
+        preds = predictions[day]
+        test_returns = test_data[test_data[:,0]==day][:,-2]
+        top_preds = predictions[day].argsort()[-k:][::-1] 
+        trans_long = test_returns[top_preds]
+        worst_preds = predictions[day].argsort()[:k][::-1] 
+        trans_short = -test_returns[worst_preds]
+        rets.loc[day] = [np.mean(trans_long),np.mean(trans_short)] 
+    print('Result : ',rets.mean())  
+    return rets      
 # 生成目录
 model_folder = 'models-Intraday-240-1-LSTM'
 result_folder = 'results-Intraday-240-1-LSTM'
