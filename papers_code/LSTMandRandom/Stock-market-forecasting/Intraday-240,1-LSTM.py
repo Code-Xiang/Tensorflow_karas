@@ -65,7 +65,7 @@ def callbacks_req(model_type='LSTM'):
 def trainer(train_data,test_data,model_type='LSTM'):
     np.random.shuffle(train_data)
     train_x,train_y,train_ret = train_data[:,2:-2],train_data[:,-1],train_data[:,-2]
-    train_x = np.reshape(train_x,(len(train_x),240,1))
+    train_x = np.reshape(train_x,(len(train_x),240,1)).astype(np.float32)
 
     train_y = np.reshape(train_y,(-1, 1))
     train_ret = np.reshape(train_ret,(-1, 1))
@@ -85,7 +85,7 @@ def trainer(train_data,test_data,model_type='LSTM'):
               epochs=1000,
               validation_split=0.2,
               callbacks=callbacks,
-              batch_size=256
+              batch_size=512
               )
 
     dates = list(set(test_data[:,0]))
@@ -98,7 +98,6 @@ def trainer(train_data,test_data,model_type='LSTM'):
 
 def trained(filename,train_data,test_data):
     model = load_model(filename)
-
     dates = list(set(test_data[:,0]))
     predictions = {}
     for day in dates:
@@ -186,11 +185,12 @@ for test_year in range(1993,2020):
         
     train_data = np.concatenate([x for x in train_data])
     test_data = np.concatenate([x for x in test_data])
-    
+    # 标准化
     scalar_normalize(train_data,test_data)
     print(train_data.shape,test_data.shape,time.time()-start)
     
     model,predictions = trainer(train_data,test_data)
+    # 模拟？
     returns = simulate(test_data,predictions)
     returns.to_csv(result_folder+'/avg_daily_rets-'+str(test_year)+'.csv')
     
