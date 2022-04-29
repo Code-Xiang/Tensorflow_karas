@@ -96,15 +96,15 @@ def create_stock_data(df_open,df_close,st,m=240):
     for k in range(m)[::-1]:
         st_data['IntraR'+str(k)] = daily_change.shift(k)
 
-    st_data['IntraR-future'] = daily_change.shift(-1)    
-    st_data['label'] = list(label[st])+[np.nan] 
-    st_data['Month'] = list(df_close['Date'].str[:-3])
+    st_data['IntraR-future'] = daily_change.shift(-1)  # 将后一天赋值给当前的日期  
+    st_data['label'] = list(label[st])+[np.nan] #最后一个加一个nan
+    st_data['Month'] = list(df_close['Date'].str[:-3]) # 去掉后面的天，留月份
     st_data = st_data.dropna()
     
-    trade_year = st_data['Month'].str[:4]
+    trade_year = st_data['Month'].str[:4] # 取年份
     st_data = st_data.drop(columns=['Month'])
-    st_train_data = st_data[trade_year<str(test_year)]
-    st_test_data = st_data[trade_year==str(test_year)]
+    st_train_data = st_data[trade_year<str(test_year)] # 交易年份小于测试年份的都是训练年份
+    st_test_data = st_data[trade_year==str(test_year)] # 交易年份是测试年份的则是测试年份
     return np.array(st_train_data),np.array(st_test_data) 
 
 def scalar_normalize(train_data,test_data):
@@ -114,7 +114,7 @@ def scalar_normalize(train_data,test_data):
     test_data[:,2:-2] = scaler.transform(test_data[:,2:-2])
 
 def trainer(train_data,test_data,model_type='LSTM'):
-    np.random.shuffle(train_data)
+    np.random.shuffle(train_data) # 打乱训练数据
     train_x,train_y,train_ret = train_data[:,2:-2],train_data[:,-1],train_data[:,-2]
     train_x = np.reshape(train_x,(len(train_x),240,1)).astype(np.float32)
 
