@@ -39,6 +39,8 @@ for test_year in range(1993,2016):
 # 1990-01 1990-12
 def makeLSTM():
     inputs = Input(shape=(240,1))
+    # return_sequences默认为false,此时返回一个hidden state的值，如果input数据包含多个时间步，则这个
+    # hidden state 最后一个时间步的结果
     x = CuDNNLSTM(25,return_sequences=False)(inputs)
     x = Dropout(0.1)(x)
     outputs = Dense(2,activation='softmax')(x)
@@ -62,8 +64,57 @@ def callbacks_req(model_type='LSTM'):
     arr = np.swapaxes(arr,1,2)
     return arr
 
+
+
+def trained(filename,train_data,test_data):
+    model = load_model(filename)
+    dates = list(set(test_data[:,0]))
+    predictions = {}
+    for day in dates:
+        test_d = test_data[test_data[:,0]==day]
+        test_d = np.reshape(test_d[:,2:-2],(len(test_d),240,1))
+        predictions[day] = model.predict(test_d)[:,1]
+    return model,predictions     
+
+   
+
+    
+def create_label(df_open,df_close,perc=[0.5,0.5]):
+    if not np.all(df_close.iloc[:,0]==df_open.iloc[:,0]):
+        print('Date Index issue')
+        return
+    perc = [0.]+list(np.cumsum(perc))
+    label = (df_close.iloc[:,1:]/df_open.iloc[:,1:]-1).apply(
+            lambda x: pd.qcut(x.rank(method='first'),perc,labels=False), axis=1)
+    return label[1:]
+
+def create_stock_data(df_open,df_close,st,m=240):
+    st_data = pd.DataFrame([])
+    st_data['Date'] = list(df_close['Date'])
+    st_data['Name'] = [st]*len(st_data)
+    daily_change = df_close[st]/df_open[st]-1
+    for k in range(m)[::-1]:
+        st_data['IntraR'+str(k)] = daily_change.shift(k)
+
+    st_data['IntraR-future'] = daily_change.shift(-1)  # 将后一天赋值给当前的日期  
+    st_data['label'] = list(label[st])+[np.nan] #最后一个加一个nan
+    st_data['Month'] = list(df_close['Date'].str[:-3]) # 去掉后面的天，留月份
+    st_data = st_data.dropna()
+    
+    trade_year = st_data['Month'].str[:4] # 取年份
+    st_data = st_data.drop(columns=['Month'])
+    st_train_data = st_data[trade_year<str(test_year)] # 交易年份小于测试年份的都是训练年份
+    st_test_data = st_data[trade_year==str(test_year)] # 交易年份是测试年份的则是测试年份
+    return np.array(st_train_data),np.array(st_test_data) 
+
+def scalar_normalize(train_data,test_data):
+    scaler = RobustScaler()
+    scaler.fit(train_data[:,2:-2])
+    train_data[:,2:-2] = scaler.transform(train_data[:,2:-2])
+    test_data[:,2:-2] = scaler.transform(test_data[:,2:-2])
+
 def trainer(train_data,test_data,model_type='LSTM'):
-    np.random.shuffle(train_data)
+    np.random.shuffle(train_data) # 打乱训练数据
     train_x,train_y,train_ret = train_data[:,2:-2],train_data[:,-1],train_data[:,-2]
     train_x = np.reshape(train_x,(len(train_x),240,1)).astype(np.float32)
 
@@ -96,16 +147,6 @@ def trainer(train_data,test_data,model_type='LSTM'):
         predictions[day] = model.predict(test_d)[:,1]
     return model,predictions
 
-def trained(filename,train_data,test_data):
-    model = load_model(filename)
-    dates = list(set(test_data[:,0]))
-    predictions = {}
-    for day in dates:
-        test_d = test_data[test_data[:,0]==day]
-        test_d = np.reshape(test_d[:,2:-2],(len(test_d),240,1))
-        predictions[day] = model.predict(test_d)[:,1]
-    return model,predictions     
-
 def simulate(test_data,predictions):
     rets = pd.DataFrame([],columns=['Long','Short'])
     k = 10
@@ -118,43 +159,7 @@ def simulate(test_data,predictions):
         trans_short = -test_returns[worst_preds]
         rets.loc[day] = [np.mean(trans_long),np.mean(trans_short)] 
     print('Result : ',rets.mean())  
-    return rets       
-
-    
-def create_label(df_open,df_close,perc=[0.5,0.5]):
-    if not np.all(df_close.iloc[:,0]==df_open.iloc[:,0]):
-        print('Date Index issue')
-        return
-    perc = [0.]+list(np.cumsum(perc))
-    label = (df_close.iloc[:,1:]/df_open.iloc[:,1:]-1).apply(
-            lambda x: pd.qcut(x.rank(method='first'),perc,labels=False), axis=1)
-    return label[1:]
-
-def create_stock_data(df_open,df_close,st,m=240):
-    st_data = pd.DataFrame([])
-    st_data['Date'] = list(df_close['Date'])
-    st_data['Name'] = [st]*len(st_data)
-    daily_change = df_close[st]/df_open[st]-1
-    for k in range(m)[::-1]:
-        st_data['IntraR'+str(k)] = daily_change.shift(k)
-
-    st_data['IntraR-future'] = daily_change.shift(-1)    
-    st_data['label'] = list(label[st])+[np.nan] 
-    st_data['Month'] = list(df_close['Date'].str[:-3])
-    st_data = st_data.dropna()
-    
-    trade_year = st_data['Month'].str[:4]
-    st_data = st_data.drop(columns=['Month'])
-    st_train_data = st_data[trade_year<str(test_year)]
-    st_test_data = st_data[trade_year==str(test_year)]
-    return np.array(st_train_data),np.array(st_test_data) 
-
-def scalar_normalize(train_data,test_data):
-    scaler = RobustScaler()
-    scaler.fit(train_data[:,2:-2])
-    train_data[:,2:-2] = scaler.transform(train_data[:,2:-2])
-    test_data[:,2:-2] = scaler.transform(test_data[:,2:-2])
-    
+    return rets      
 # 生成目录
 model_folder = 'models-Intraday-240-1-LSTM'
 result_folder = 'results-Intraday-240-1-LSTM'
