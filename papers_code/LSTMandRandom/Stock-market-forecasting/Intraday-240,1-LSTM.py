@@ -120,10 +120,10 @@ def trainer(train_data,test_data,model_type='LSTM'):
 
     train_y = np.reshape(train_y,(-1, 1))
     train_ret = np.reshape(train_ret,(-1, 1))
-    enc = OneHotEncoder(handle_unknown='ignore')
+    enc = OneHotEncoder(handle_unknown='ignore') # 它可以实现将分类特征的每个元素转换成为一个可以用来计算的值
     enc.fit(train_y)
     enc_y = enc.transform(train_y).toarray()
-    train_ret = np.hstack((np.zeros((len(train_data),1)),train_ret)) 
+    train_ret = np.hstack((np.zeros((len(train_data),1)),train_ret))  # hstack将参数元组的元素组按水平方向进行叠加
 
     if model_type == 'LSTM':
         model = makeLSTM()

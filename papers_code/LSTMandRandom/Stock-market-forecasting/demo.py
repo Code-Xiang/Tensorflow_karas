@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import time
 from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import OneHotEncoder
 SP500_df = pd.read_csv('papers_code/LSTMandRandom/Stock-market-forecasting/data/SPXconst.csv')
 all_companies = list(set(SP500_df.values.flatten()))
 all_companies.remove(np.nan)
@@ -81,6 +82,9 @@ train_x,train_y,train_ret = train_data[:,2:-2],train_data[:,-1],train_data[:,-2]
 train_x = np.reshape(train_x,(len(train_x),240,1)).astype(np.float32)
 train_y = np.reshape(train_y,(-1, 1))
 train_ret = np.reshape(train_ret,(-1, 1))
+enc = OneHotEncoder(handle_unknown='ignore') # 它可以实现将分类特征的每个元素转换成为一个可以用来计算的值
+enc.fit(train_y)
+enc_y = enc.transform(train_y).toarray()
 print('train_x:\n',train_x)
 print('train_y:\n',train_y)
 print('train_ret:\n',train_ret)
