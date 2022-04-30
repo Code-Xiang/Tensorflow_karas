@@ -56,6 +56,10 @@ def callbacks_req(model_type='LSTM'):
     filepath = model_folder+"/model-" + model_type + '-' + str(test_year) + "-E{epoch:02d}.h5"
     model_checkpoint = ModelCheckpoint(filepath, monitor='val_loss',save_best_only=False, save_freq=1)
     earlyStopping = EarlyStopping(monitor='val_loss',mode='min',patience=10,restore_best_weights=True)
+    # monitor:监控的数据接口
+    # 因为monitor='val_loss'，所以mode要min
+    # patience 能够容忍多少个epoch内都没有improvement
+    # restore_best_weights：是否从具有检测数据的最佳值的时期恢复模型权重。如果为False，则使用在训练的最后一步获得的模型权重
     return [csv_logger,earlyStopping,model_checkpoint]
 #  models-Intraday-240-1-LSTM/training-log-LSTM-1990-01.csv
 #  models-Intraday-240-1-LSTM/model-training-log-LSTM-1990-01-E{day}.h5
@@ -138,13 +142,14 @@ def trainer(train_data,test_data,model_type='LSTM'):
               callbacks=callbacks,
               batch_size=512
               )
-
+    
     dates = list(set(test_data[:,0]))
     predictions = {}
     for day in dates:
         test_d = test_data[test_data[:,0]==day]
         test_d = np.reshape(test_d[:,2:-2], (len(test_d),240,1))
         predictions[day] = model.predict(test_d)[:,1]
+        # model.predict 返回值：每个测试集的所预测的各个类别的概率
     return model,predictions
 
 def simulate(test_data,predictions):
