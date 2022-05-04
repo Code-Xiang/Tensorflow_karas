@@ -89,7 +89,7 @@ def trainer(train_data,test_data,model_type='CuDNNLSTM'):
     model.fit(train_x,
               enc_y,
               epochs=1000,
-              validation_split=0.2,
+              validation_split=0.2, # 80%的数据用于训练，20%的数据用于验证
               callbacks=callbacks,
               batch_size=512
               )
@@ -135,7 +135,7 @@ def create_label(df,perc=[0.5,0.5]):
     return label
 
 def create_stock_data(df,st):
-    daily_change = df[st].pct_change()
+    daily_change = df[st].pct_change() #                       表示当前元素与先前元素的相差百分比
     st_data = pd.DataFrame([])
     st_data['Date'] = list(df['Date'])
     st_data['Name'] = [st]*len(st_data)
