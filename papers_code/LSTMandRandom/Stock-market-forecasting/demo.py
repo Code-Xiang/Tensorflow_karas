@@ -1,3 +1,4 @@
+from Statistics import Statistics
 from unittest import result
 from wsgiref import validate
 import pandas as pd
@@ -5,6 +6,7 @@ import numpy as np
 import time
 from sklearn.preprocessing import RobustScaler
 from sklearn.preprocessing import OneHotEncoder
+import os
 from tensorflow.compat.v1.keras.layers import CuDNNLSTM, Dropout,Dense,Input,add
 from tensorflow.keras.models import Model, Sequential, load_model
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, CSVLogger, LearningRateScheduler
@@ -31,6 +33,9 @@ print('='*50)
 
 model_folder = 'papers_code/LSTMandRandom/Stock-market-forecasting/demo/models-Intraday-240-1-LSTM'
 result_folder ='papers_code/LSTMandRandom/Stock-market-forecasting/demo/results-Intraday-240-1-LSTM'
+for directory in [model_folder,result_folder]:
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
 filename = 'papers_code/LSTMandRandom/Stock-market-forecasting/data/Open-'+str(test_year-3)+'.csv'
 df_open = pd.read_csv(filename)
@@ -97,7 +102,9 @@ def simulate(test_data,predictions):
     rets = pd.DataFrame([],columns=['Long','Short'])
     k = 10
     for day in sorted():
-        preds = predictions[day]    
+        preds = predictions[day]
+        test_returns = test_data[test_data[:,0]==day][:,-2]
+        top_preds    
 for st in stock_names:
     st_train_data,st_test_data = create_stock_data(df_open,df_close,st)
     train_data.append(st_train_data)
@@ -105,7 +112,7 @@ for st in stock_names:
 train_data = np.concatenate([x for x in train_data])
 test_data = np.concatenate([x for x in test_data])
 
-
+print('----------------------test_data:\n',test_data)
 # 标准化
 scaler = RobustScaler()
 scaler.fit(train_data[:,2:-2])
@@ -131,22 +138,52 @@ print('train_ret:\n',train_ret.shape)
 model_type = 'LSTM'
 model = makeLSTM()
 callbacks = callbacks_req(model_type)
-# model.fit(
-#     train_x,
-#     train_y,
-#     epochs= 1000,
-#     validation_split=0.2,
-#     callbacks=callbacks,
-#     batch_size=512
-# )
+model.fit(
+    train_x,
+    enc_y,
+    epochs= 1000,
+    validation_split=0.2,
+    callbacks=callbacks,
+    batch_size=512
+)
 dates = list(set(test_data[:,0]))
 predictions = {}
 for day in dates:
     test_d = test_data[test_data[:,0]==day]
-    test_d = reshaper(test_d[:,2:-2])
+    test_d = np.reshape(test_d[:,2:-2], (len(test_d),240,1))
+    test_d = test_d.astype(np.float32)
     predictions[day] = model.predict(test_d)[:,1]
-print('predictions:\n',predictions)
+# print('predictions:\n',predictions)
+rets = pd.DataFrame([],columns=['Long','Short'])
+k = 10
+print('predictions:\n',test_data[test_data[:,0]=='1993-02-04'])
+print('predictions:\n',test_data[test_data[:,0]=='1993-02-04'][:,-2])
+print('predictions["1993-02-04"].argsort():\n',predictions['1993-02-04'].argsort())
+print('predictions["1993-02-04"].argsort()[-k:]:\n',predictions['1993-02-04'].argsort()[-k:])
+print('predictions["1993-02-04"].argsort()[-k:][::-1]:\n',predictions['1993-02-04'].argsort()[-k:][::-1])
 
+for day in sorted(predictions.keys()):
+    preds = predictions[day]
+    test_returns = test_data[test_data[:,0]==day][:,-2]
+    top_preds = predictions[day].argsort()[-k:][::-1]
+    trans_long = test_returns[top_preds]
+    worst_preds = predictions[day].argsort()[-k:][::-1]
+    trans_short = -test_returns[worst_preds]
+    rets.loc[day] = [np.mean(trans_long),np.mean(trans_short)]
+print('Result : ',rets.mean)
+# return rets
+rets.to_csv(result_folder+'/avg_daily_rets-'+str(test_year)+'.csv')
+result = Statistics(rets.sum(axis=1))
+print('\n Average returns prior to transaction charges')
+result.shortreport()
+
+with open(result_folder+"/avg_returns.txt","a") as myfile:
+    res = '-'*30 + '\n'
+    res += str(test_year) + '\n'
+    res +='Mean = '+ str(result.mean()) + '\n'
+    res += 'Sharpe = '+ str(result.sharpe()) + '\n'
+    res += '_'*30 + '\n'
+    myfile.write(res)
 # return model,predictions
 # print('train_data:\n',train_data)
 # print('test_data:\n',test_data)

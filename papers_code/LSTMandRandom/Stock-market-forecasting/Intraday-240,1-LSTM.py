@@ -148,6 +148,7 @@ def trainer(train_data,test_data,model_type='LSTM'):
     for day in dates:
         test_d = test_data[test_data[:,0]==day]
         test_d = np.reshape(test_d[:,2:-2], (len(test_d),240,1))
+        test_d = test_d.astype(np.float32)
         predictions[day] = model.predict(test_d)[:,1]
         # model.predict 返回值：每个测试集的所预测的各个类别的概率
     return model,predictions
@@ -159,6 +160,8 @@ def simulate(test_data,predictions):
         preds = predictions[day]
         test_returns = test_data[test_data[:,0]==day][:,-2]
         top_preds = predictions[day].argsort()[-k:][::-1] 
+        # argsort(),表示对数据进行从小到大进行排序，返回数据的索引值
+        # [::-1] 表示对数组a进行从大到小排序，返回索引值
         trans_long = test_returns[top_preds]
         worst_preds = predictions[day].argsort()[:k][::-1] 
         trans_short = -test_returns[worst_preds]
@@ -206,7 +209,7 @@ for test_year in range(1993,2020):
     
     result = Statistics(returns.sum(axis=1))
     print('\nAverage returns prior to transaction charges')
-    result.shortreport() 
+    result.shortreport()
     
     with open(result_folder+"/avg_returns.txt", "a") as myfile:
         res = '-'*30 + '\n'
