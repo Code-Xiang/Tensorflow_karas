@@ -27,6 +27,7 @@ SP_2020 = pd.DataFrame(data,columns=rgdate1,index= [i for i in range(0,505)])
 # SP_2020.append(df)
 # SP_2020.loc[0,'01/1990'] = str(StockName)
 
+
 i = 0
 for StockName in sp_name_true: 
     StockPrice = pd.read_csv('LSTM_SP500/Data/Stock/'+str(StockName))
@@ -45,22 +46,3 @@ for StockName in sp_name_true:
     i = i +1
 print('SP_2020\n',SP_2020)
 SP_2020.to_csv('LSTM_SP500/Data/SPXconst_2020_new.csv')
-
-
-# SP500_df = pd.read_csv('LSTM_SP500/Data/SP 500 Stock Price 2013-2017.csv')
-# corporate_name = list(set(SP500_df['Name'].values))
-# names = ['corporate_name']
-# test = pd.DataFrame(columns = names,data = corporate_name)
-# test.to_csv('LSTM_SP500/Data/corporate_name.csv')
-# for i in range():
-
-corporate_name = pd.read_csv('LSTM_SP500/Data/corporate_name.csv')
-SP_names = list(set(corporate_name['corporate_name'].values))
-# print('SP500_df:\n',SP_names)
-StockName = SP_names[0]
-StockPrice = pd.read_csv('LSTM_SP500/Data/Stock/'+str(StockName)+'.csv')
-print('StockName:\n',StockName)
-print('StockPrice:\n',StockPrice)
-# print('===='*20+'\n',StockName)
-# for StockName in SP_names:
-#     print('StockName:\n',StockName)
