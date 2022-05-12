@@ -6,7 +6,6 @@ import time
 import os
 import csv
 
-
 corporate_name = pd.read_csv('LSTM_SP500/Data/corporate_name.csv')
 stockDate = pd.read_csv('LSTM_SP500/Data/SPXconst_2020.csv')
 rgdate1 = stockDate.columns.values

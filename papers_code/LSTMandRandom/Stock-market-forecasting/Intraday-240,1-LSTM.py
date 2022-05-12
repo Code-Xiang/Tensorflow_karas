@@ -8,7 +8,7 @@ from sklearn.preprocessing import RobustScaler
 from Statistics import Statistics
 
 import tensorflow as tf
-from tensorflow.compat.v1.keras.layers import CuDNNLSTM, Dropout,Dense,Input,add
+from tensorflow.compat.v1.keras.layers import CuDNNLSTM, Dropout,Dense,Input,add,LSTM
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, CSVLogger, LearningRateScheduler
 from tensorflow.keras.models import Model, Sequential, load_model
 from tensorflow.keras import optimizers
@@ -49,7 +49,18 @@ def makeLSTM():
                         metrics=['accuracy'])
     model.summary()
     return model
-    
+
+def cpuLSTM():
+    inputs = Input(shape=(240,1))
+    x = LSTM(25,activation='tanh', recurrent_activation='sigmoid',
+                   input_shape=(240,1),
+                   dropout=0.1,recurrent_dropout=0.1)(inputs)
+    outputs = Dense(2,activation='softmax')(x)
+    model = Model(inputs=inputs, outputs=outputs)
+    model.compile(loss='categorical_crossentropy',optimizer=optimizers.RMSprop(),
+                          metrics=['accuracy'])
+    model.summary()
+    return model    
 
 def callbacks_req(model_type='LSTM'):
     csv_logger = CSVLogger(model_folder+'/training-log-'+model_type+'-'+str(test_year)+'.csv')
@@ -130,7 +141,7 @@ def trainer(train_data,test_data,model_type='LSTM'):
     train_ret = np.hstack((np.zeros((len(train_data),1)),train_ret))  # hstack将参数元组的元素组按水平方向进行叠加
 
     if model_type == 'LSTM':
-        model = makeLSTM()
+        model = cpuLSTM()
     else:
         return
     callbacks = callbacks_req(model_type)
