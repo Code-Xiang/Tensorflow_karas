@@ -20,7 +20,7 @@ SEED = 9
 os.environ['PYTHONHASHSEED']=str(SEED)
 random.seed(SEED)
 np.random.seed(SEED)
-SP500_df = pd.read_csv('papers_code/LSTMandRandom/Stock-market-forecasting/data/SPXconst.csv')
+SP500_df = pd.read_csv('data/SPXconst.csv')
 # SP500_df = pd.read_csv('./论文+代码/LSTMandRandom/Stock-market-forecasting/data/SPXconst.csv')
 all_companies = list(set(SP500_df.values.flatten()))
 all_companies.remove(np.nan)
@@ -172,9 +172,9 @@ for test_year in range(1993,2020):
     print(test_year)
     print('-'*40)
     
-    filename = 'papers_code/LSTMandRandom/Stock-market-forecasting/data/Open-'+str(test_year-3)+'.csv'
+    filename = 'data/Open-'+str(test_year-3)+'.csv'
     df_open = pd.read_csv(filename)
-    filename = 'papers_code/LSTMandRandom/Stock-market-forecasting/data/Close-'+str(test_year-3)+'.csv'
+    filename = 'data/Close-'+str(test_year-3)+'.csv'
     df_close = pd.read_csv(filename)
     
     label = create_label(df_open,df_close)
