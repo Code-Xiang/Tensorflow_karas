@@ -141,7 +141,7 @@ def trainer(train_data,test_data,model_type='LSTM'):
     train_ret = np.hstack((np.zeros((len(train_data),1)),train_ret))  # hstack将参数元组的元素组按水平方向进行叠加
 
     if model_type == 'LSTM':
-        model = cpuLSTM()
+        model = makeLSTM()
     else:
         return
     callbacks = callbacks_req(model_type)
@@ -220,13 +220,15 @@ for test_year in range(1993,2020):
     
     result = Statistics(returns.sum(axis=1))
     print('\nAverage returns prior to transaction charges')
-    result.shortreport()
+    result.report()
     
     with open(result_folder+"/avg_returns.txt", "a") as myfile:
         res = '-'*30 + '\n'
         res += str(test_year) + '\n'
         res += 'Mean = ' + str(result.mean()) + '\n'
         res += 'Sharpe = '+str(result.sharpe()) + '\n'
+        res += 'std = '+str(result.std()) + '\n'
+        res += 'MDD = '+str(result.MDD()) + '\n'
         res += '-'*30 + '\n'
         myfile.write(res)
         
