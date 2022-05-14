@@ -45,4 +45,4 @@ for StockName in sp_name_true:
             print('Nothing!!')
     i = i +1
 print('SP_2020\n',SP_2020)
-SP_2020.to_csv('LSTM_SP500/Data/SPXconst_2020_new.csv')
+SP_2020.to_csv('LSTM_SP500/Data/SPXconst_2020_new_index.csv',index = False)

@@ -91,9 +91,7 @@ def trained(filename,train_data,test_data):
         predictions[day] = model.predict(test_d)[:,1]
     return model,predictions     
 
-   
-
-    
+      
 def create_label(df_open,df_close,perc=[0.5,0.5]):
     if not np.all(df_close.iloc[:,0]==df_open.iloc[:,0]):
         print('Date Index issue')
@@ -141,7 +139,7 @@ def trainer(train_data,test_data,model_type='LSTM'):
     train_ret = np.hstack((np.zeros((len(train_data),1)),train_ret))  # hstack将参数元组的元素组按水平方向进行叠加
 
     if model_type == 'LSTM':
-        model = makeLSTM()
+        model = cpuLSTM()
     else:
         return
     callbacks = callbacks_req(model_type)
@@ -196,7 +194,10 @@ for test_year in range(1993,2020):
     df_open = pd.read_csv(filename)
     filename = 'data/Close-'+str(test_year-3)+'.csv'
     df_close = pd.read_csv(filename)
-    
+    colums_open = df_open.columns
+    df_open[colums_open] = df_open[colums_open].replace(0,np.nan)
+    colums_close = df_open.columns
+    df_open[colums_close] = df_open[colums_close].replace(0,np.nan)
     label = create_label(df_open,df_close)
     stock_names = sorted(list(constituents[str(test_year-1)+'-12']))
     train_data,test_data = [],[]
