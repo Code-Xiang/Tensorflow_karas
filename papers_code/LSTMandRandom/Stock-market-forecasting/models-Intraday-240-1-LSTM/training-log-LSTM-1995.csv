@@ -1,0 +1,2 @@
+epoch,accuracy,loss,val_accuracy,val_loss
+0,0.5094095,0.6929292461162824,0.512105,0.6926487673740447
