@@ -115,6 +115,10 @@ def simulate(test_data,predictions):
     print('Result : ',rets.mean())  
     return rets       
 
+
+
+
+
     
 def create_label(df_open,df_close,perc=[0.5,0.5]):
     if not np.all(df_close.iloc[:,0]==df_open.iloc[:,0]):
@@ -164,52 +168,53 @@ result_folder = 'results-Intraday-240-3-LSTM'
 for directory in [model_folder,result_folder]:
     if not os.path.exists(directory):
         os.makedirs(directory)
-
+ret_down = os.listdir("results-Intraday-240-3-LSTM")
+ret_down = [i[15:-4] for i in ret_down]
 for test_year in range(1993,2020):
-    
-    print('-'*40)
-    print(test_year)
-    print('-'*40)
-    
-    filename = 'data/Open-'+str(test_year-3)+'.csv'
-    df_open = pd.read_csv(filename)
-    filename = 'data/Close-'+str(test_year-3)+'.csv'
-    df_close = pd.read_csv(filename)
-    colums_open = df_open.columns
-    df_open[colums_open] = df_open[colums_open].replace(0,np.nan)
-    colums_close = df_open.columns
-    df_open[colums_close] = df_open[colums_close].replace(0,np.nan)
-    label = create_label(df_open,df_close)
-    stock_names = sorted(list(constituents[str(test_year-1)+'-12']))
-    train_data,test_data = [],[]
+    if str(test_year) not in ret_down:
+        print('-'*40)
+        print(test_year)
+        print('-'*40)
+        
+        filename = 'data/Open-'+str(test_year-3)+'.csv'
+        df_open = pd.read_csv(filename)
+        filename = 'data/Close-'+str(test_year-3)+'.csv'
+        df_close = pd.read_csv(filename)
+        colums_open = df_open.columns
+        df_open[colums_open] = df_open[colums_open].replace(0,np.nan)
+        colums_close = df_open.columns
+        df_open[colums_close] = df_open[colums_close].replace(0,np.nan)
+        label = create_label(df_open,df_close)
+        stock_names = sorted(list(constituents[str(test_year-1)+'-12']))
+        train_data,test_data = [],[]
 
-    start = time.time()
-    for st in stock_names:
-        st_train_data,st_test_data = create_stock_data(df_open,df_close,st)
-        train_data.append(st_train_data)
-        test_data.append(st_test_data)
-      
-    train_data = np.concatenate([x for x in train_data])
-    test_data = np.concatenate([x for x in test_data])
-    
-    scalar_normalize(train_data,test_data)
-    print(train_data.shape,test_data.shape,time.time()-start)
-    
-    model,predictions = trainer(train_data,test_data)
-    returns = simulate(test_data,predictions)
-    returns.to_csv(result_folder+'/avg_daily_rets-'+str(test_year)+'.csv')
-    
-    result = Statistics(returns.sum(axis=1))
-    print('\nAverage returns prior to transaction charges')
-    result.report() 
-    
-    with open(result_folder+"/avg_returns.txt", "a") as myfile:
-        res = '-'*30 + '\n'
-        res += str(test_year) + '\n'
-        res += 'Mean = ' + str(result.mean()) + '\n'
-        res += 'Sharpe = '+str(result.sharpe()) + '\n'
-        res += 'std = '+str(result.std()) + '\n'
-        res += 'MDD = '+str(result.MDD()) + '\n'
-        res += '-'*30 + '\n'
-        myfile.write(res)
+        start = time.time()
+        for st in stock_names:
+            st_train_data,st_test_data = create_stock_data(df_open,df_close,st)
+            train_data.append(st_train_data)
+            test_data.append(st_test_data)
+        
+        train_data = np.concatenate([x for x in train_data])
+        test_data = np.concatenate([x for x in test_data])
+        
+        scalar_normalize(train_data,test_data)
+        print(train_data.shape,test_data.shape,time.time()-start)
+        
+        model,predictions = trainer(train_data,test_data)
+        returns = simulate(test_data,predictions)
+        returns.to_csv(result_folder+'/avg_daily_rets-'+str(test_year)+'.csv')
+        
+        result = Statistics(returns.sum(axis=1))
+        print('\nAverage returns prior to transaction charges')
+        result.report() 
+        
+        with open(result_folder+"/avg_returns.txt", "a") as myfile:
+            res = '-'*30 + '\n'
+            res += str(test_year) + '\n'
+            res += 'Mean = ' + str(result.mean()) + '\n'
+            res += 'Sharpe = '+str(result.sharpe()) + '\n'
+            res += 'std = '+str(result.std()) + '\n'
+            res += 'MDD = '+str(result.MDD()) + '\n'
+            res += '-'*30 + '\n'
+            myfile.write(res)
             
